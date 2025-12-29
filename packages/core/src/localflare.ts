@@ -58,9 +58,30 @@ export class LocalFlare {
       throw new Error('Failed to compile worker script')
     }
 
+    // Build explicit binding configurations from parsed config
+    // Miniflare v3 expects bindings as objects keyed by binding name
+    const d1Databases = Object.fromEntries(
+      this.bindings.d1.map(d => [d.binding, d.database_id])
+    )
+
+    const kvNamespaces = Object.fromEntries(
+      this.bindings.kv.map(k => [k.binding, k.id])
+    )
+
+    const r2Buckets = Object.fromEntries(
+      this.bindings.r2.map(r => [r.binding, r.bucket_name])
+    )
+
+    const queueProducers = Object.fromEntries(
+      this.bindings.queues.producers.map(q => [q.binding, q.queue])
+    )
+
+    const durableObjects = Object.fromEntries(
+      this.bindings.durableObjects.map(d => [d.name, d.class_name])
+    )
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.mf = new Miniflare({
-      wranglerConfigPath: configPath,
+    const miniflareOptions: any = {
       modules: [
         {
           type: 'ESModule',
@@ -75,7 +96,28 @@ export class LocalFlare {
       r2Persist: `${persistRoot}/r2`,
       durableObjectsPersist: `${persistRoot}/do`,
       cachePersist: `${persistRoot}/cache`,
-    } as any)
+      // Explicit binding configurations
+      bindings: this.bindings.vars,
+    }
+
+    // Only add bindings if they exist
+    if (Object.keys(d1Databases).length > 0) {
+      miniflareOptions.d1Databases = d1Databases
+    }
+    if (Object.keys(kvNamespaces).length > 0) {
+      miniflareOptions.kvNamespaces = kvNamespaces
+    }
+    if (Object.keys(r2Buckets).length > 0) {
+      miniflareOptions.r2Buckets = r2Buckets
+    }
+    if (Object.keys(queueProducers).length > 0) {
+      miniflareOptions.queueProducers = queueProducers
+    }
+    if (Object.keys(durableObjects).length > 0) {
+      miniflareOptions.durableObjects = durableObjects
+    }
+
+    this.mf = new Miniflare(miniflareOptions)
 
     // Wait for Miniflare to be ready
     const url = await this.mf.ready
