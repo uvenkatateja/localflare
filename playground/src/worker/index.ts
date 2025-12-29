@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { DurableObject } from 'cloudflare:workers'
 
 // Environment types
 interface Env {
@@ -14,34 +15,29 @@ interface Env {
 }
 
 // Durable Object for counting
-export class Counter implements DurableObject {
-  private state: DurableObjectState
+export class Counter extends DurableObject {
   private value: number = 0
-
-  constructor(state: DurableObjectState) {
-    this.state = state
-  }
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
 
     // Load stored value
-    this.value = (await this.state.storage.get<number>('value')) ?? 0
+    this.value = (await this.ctx.storage.get<number>('value')) ?? 0
 
     switch (url.pathname) {
       case '/increment':
         this.value++
-        await this.state.storage.put('value', this.value)
+        await this.ctx.storage.put('value', this.value)
         return Response.json({ value: this.value })
 
       case '/decrement':
         this.value--
-        await this.state.storage.put('value', this.value)
+        await this.ctx.storage.put('value', this.value)
         return Response.json({ value: this.value })
 
       case '/reset':
         this.value = 0
-        await this.state.storage.put('value', this.value)
+        await this.ctx.storage.put('value', this.value)
         return Response.json({ value: this.value })
 
       default:
@@ -53,10 +49,10 @@ export class Counter implements DurableObject {
 // Main worker
 const app = new Hono<{ Bindings: Env }>()
 
-app.use('*', cors())
+app.use('/api/*', cors())
 
 // Health check
-app.get('/', (c) => {
+app.get('/api', (c) => {
   return c.json({
     name: 'LocalFlare Playground',
     environment: c.env.ENVIRONMENT,
@@ -64,7 +60,7 @@ app.get('/', (c) => {
     endpoints: {
       users: '/api/users',
       posts: '/api/posts',
-      kv: '/api/kv/:key',
+      kv: '/api/kv',
       r2: '/api/files',
       queue: '/api/queue',
       counter: '/api/counter/:name',
@@ -103,6 +99,13 @@ app.post('/api/users', async (c) => {
   return c.json({ success: true, id: result.meta.last_row_id })
 })
 
+// Delete user
+app.delete('/api/users/:id', async (c) => {
+  const id = c.req.param('id')
+  await c.env.DB.prepare('DELETE FROM users WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
 // Get all posts
 app.get('/api/posts', async (c) => {
   const { results } = await c.env.DB.prepare(`
@@ -117,12 +120,19 @@ app.get('/api/posts', async (c) => {
 
 // ============ KV Routes ============
 
+// List all keys
+app.get('/api/kv', async (c) => {
+  const prefix = c.req.query('prefix') || undefined
+  const list = await c.env.CACHE.list({ prefix })
+  return c.json({ keys: list.keys })
+})
+
 // Get KV value
 app.get('/api/kv/:key', async (c) => {
   const key = c.req.param('key')
   const value = await c.env.CACHE.get(key)
 
-  if (!value) {
+  if (value === null) {
     return c.json({ error: 'Key not found' }, 404)
   }
 
@@ -150,7 +160,7 @@ app.delete('/api/kv/:key', async (c) => {
 
 // List files
 app.get('/api/files', async (c) => {
-  const prefix = c.req.query('prefix')
+  const prefix = c.req.query('prefix') || undefined
   const list = await c.env.STORAGE.list({ prefix })
 
   return c.json({
@@ -189,6 +199,13 @@ app.get('/api/files/:key', async (c) => {
       'Content-Type': object.httpMetadata?.contentType ?? 'application/octet-stream',
     },
   })
+})
+
+// Delete file
+app.delete('/api/files/:key', async (c) => {
+  const key = c.req.param('key')
+  await c.env.STORAGE.delete(key)
+  return c.json({ success: true })
 })
 
 // ============ Queue Routes ============

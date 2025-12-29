@@ -51,6 +51,7 @@ export class LocalFlare {
       minify: false,
       sourcemap: false,
       conditions: ['workerd', 'worker', 'browser'],
+      external: ['cloudflare:*', 'node:*'],
     })
 
     const scriptContent = buildResult.outputFiles?.[0]?.text

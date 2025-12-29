@@ -11,7 +11,7 @@ import { QueuesExplorer } from '@/components/queues/QueuesExplorer'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
       retry: 1,
       staleTime: 5000,
     },

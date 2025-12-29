@@ -1,5 +1,5 @@
 name = "localflare-playground"
-main = "src/index.ts"
+main = "src/worker/index.ts"
 compatibility_date = "2024-12-01"
 
 # D1 Database
