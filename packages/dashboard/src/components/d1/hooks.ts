@@ -13,6 +13,8 @@ import type {
   D1CellValue,
   D1TableSchema,
   D1Column,
+  D1ForeignKey,
+  D1Index,
   QueryHistoryEntry,
   PaginationState,
   RowSelectionState,
@@ -134,8 +136,8 @@ export function useD1TableInfo(binding: string | null, table: string | null) {
         name: info.table,
         columns: info.columns as D1Column[],
         primaryKeys,
-        foreignKeys: [], // Would need additional PRAGMA call
-        indexes: [], // Would need additional PRAGMA call
+        foreignKeys: (info.foreignKeys || []) as D1ForeignKey[],
+        indexes: (info.indexes || []) as D1Index[],
         rowCount: info.rowCount,
       }
     },

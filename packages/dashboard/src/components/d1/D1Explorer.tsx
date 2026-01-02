@@ -42,8 +42,10 @@ import { cn } from '@/lib/utils'
 import { SQLEditor } from './SQLEditor'
 import { EditableDataTable } from './EditableDataTable'
 import { RowEditorDialog } from './RowEditorDialog'
+import { DummyDataGeneratorDialog } from './DummyDataGeneratorDialog'
 import { TableSchemaPanel } from './TableSchemaPanel'
 import { QueryHistory } from './QueryHistory'
+import { generateDummyRow, type ForeignKeyValues } from './dummy-data-generator'
 import {
   useD1TableInfo,
   useD1AllTableSchemas,
@@ -79,6 +81,9 @@ export function D1Explorer() {
   const [showHistory, setShowHistory] = useState(false)
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null)
   const [serverSideSort, setServerSideSort] = useState(false)
+  const [showDummyDataDialog, setShowDummyDataDialog] = useState(false)
+  const [isGeneratingDummyData, setIsGeneratingDummyData] = useState(false)
+  const [dummyDataProgress, setDummyDataProgress] = useState(0)
 
   const queryClient = useQueryClient()
   const { pagination, updatePagination, goToPage, setPageSize } = usePagination(50)
@@ -356,6 +361,61 @@ export function D1Explorer() {
     goToPage(0)
   }, [goToPage])
 
+  // Handle dummy data generation
+  const handleGenerateDummyData = useCallback(async (count: number) => {
+    if (!tableInfo || !selectedDb) return
+
+    setIsGeneratingDummyData(true)
+    setDummyDataProgress(0)
+
+    try {
+      // Fetch existing values for foreign key columns
+      const foreignKeyValues: ForeignKeyValues = {}
+
+      if (tableInfo.foreignKeys?.length > 0) {
+        for (const fk of tableInfo.foreignKeys) {
+          try {
+            // Fetch some existing values from the referenced table
+            const result = await d1Api.query(
+              selectedDb,
+              `SELECT DISTINCT "${fk.to}" FROM "${fk.table}" LIMIT 100`
+            )
+            if (result.results && result.results.length > 0) {
+              foreignKeyValues[fk.from] = (result.results as Record<string, D1CellValue>[])
+                .map(row => row[fk.to])
+                .filter(v => v != null)
+            }
+          } catch {
+            // If we can't fetch FK values, we'll skip this FK column
+            console.warn(`Could not fetch FK values for ${fk.from} -> ${fk.table}.${fk.to}`)
+          }
+        }
+      }
+
+      for (let i = 0; i < count; i++) {
+        const row = generateDummyRow(tableInfo, foreignKeyValues)
+        await d1Api.insertRow(selectedDb, selectedTable!, row as Record<string, unknown>)
+        setDummyDataProgress(i + 1)
+      }
+
+      // Refresh data after all inserts
+      queryClient.invalidateQueries({
+        queryKey: d1QueryKeys.tableInfo(selectedDb ?? '', selectedTable ?? '')
+      })
+      refetchRows()
+
+      toast.success(`Generated ${count} row${count !== 1 ? 's' : ''}`, {
+        description: `Added to ${selectedTable}`,
+      })
+      setShowDummyDataDialog(false)
+    } catch (error) {
+      toast.error('Failed to generate data', { description: String(error) })
+    } finally {
+      setIsGeneratingDummyData(false)
+      setDummyDataProgress(0)
+    }
+  }, [tableInfo, selectedDb, selectedTable, queryClient, refetchRows])
+
   // ============================================================================
   // Schema for SQL autocomplete - fetches all table columns
   // ============================================================================
@@ -605,6 +665,7 @@ export function D1Explorer() {
                   serverSideSort={serverSideSort}
                   onSortingChange={handleSortingChange}
                   onServerSideSortChange={handleServerSideSortChange}
+                  onGenerateData={() => setShowDummyDataDialog(true)}
                 />
               ) : (
                 <EmptyState
@@ -734,6 +795,18 @@ export function D1Explorer() {
           row={editingRow}
           onSave={handleRowSave}
           isSaving={insertRowMutation.isPending || updateRowMutation.isPending}
+        />
+      )}
+
+      {/* Dummy Data Generator Dialog */}
+      {tableInfo && (
+        <DummyDataGeneratorDialog
+          open={showDummyDataDialog}
+          onOpenChange={setShowDummyDataDialog}
+          schema={tableInfo}
+          onGenerate={handleGenerateDummyData}
+          isGenerating={isGeneratingDummyData}
+          progress={dummyDataProgress}
         />
       )}
 

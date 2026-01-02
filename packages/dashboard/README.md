@@ -16,10 +16,38 @@ This package provides the web-based dashboard UI for Localflare:
 ## Features
 
 ### D1 Database Explorer
-- Browse tables and schemas
-- Run SQL queries with syntax highlighting
-- Edit, insert, and delete rows
-- Export query results
+
+**Data Browser**
+- Paginated table data with customizable page sizes (25, 50, 100, 250)
+- Resizable columns with drag handles (max 400px width)
+- Column visibility toggle - show/hide columns
+- Global search across all columns
+- Column-level filtering with operators:
+  - Equals / Not equals
+  - Contains / Starts with
+  - Is null / Is not null
+- Sorting modes:
+  - Client-side sorting (current page only)
+  - Server-side sorting via ORDER BY (sort all data)
+- Inline cell editing with auto-save
+- Row actions: Edit (dialog), Copy as JSON, Delete
+- Bulk row selection and bulk delete
+- Add new row via form dialog
+- **Generate Dummy Data** - Insert 1-100 rows of realistic fake data using Faker.js
+  - Supports all SQLite/D1 types: INTEGER, REAL, TEXT, DATE, DATETIME, TIMESTAMP, TIME, BOOLEAN, NUMERIC, DECIMAL, BLOB
+  - Auto-skips auto-increment primary keys
+
+**SQL Query Editor**
+- Syntax highlighting with CodeMirror
+- SQL autocomplete for table names, column names, and keywords
+- Execute with keyboard shortcut (Cmd/Ctrl + Enter)
+- Results displayed in table format
+- Query history with re-run capability (stored in localStorage)
+
+**Schema Viewer**
+- View table structure with columns
+- Column types, primary key indicators
+- Row count per table
 
 ### KV Browser
 - View all key-value pairs

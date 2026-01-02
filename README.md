@@ -4,7 +4,7 @@ Local development dashboard for Cloudflare Workers. Visualize and interact with 
 
 ## Features
 
-- **D1 Database Explorer** - Browse tables, run SQL queries, edit data
+- **D1 Database Studio** - Full-featured SQL editor, data browser with inline editing, filtering, sorting, bulk operations, and dummy data generation
 - **KV Browser** - View, edit, and delete key-value pairs
 - **R2 File Manager** - Upload, download, and manage objects
 - **Queue Inspector** - Send test messages to queues
@@ -185,12 +185,43 @@ pnpm run dev
 
 | Binding | Support | Dashboard Features |
 |---------|---------|-------------------|
-| D1 | ✅ Full | SQL editor, table browser, data CRUD |
+| D1 | ✅ Full | Full-featured database studio (see below) |
 | KV | ✅ Full | Key browser, value editor, bulk operations |
 | R2 | ✅ Full | File browser, upload/download, metadata |
 | Durable Objects | ✅ Full | Instance listing, state inspection |
 | Queues | ✅ Full | Message viewer, send test messages |
 | Service Bindings | ✅ Full | Automatic proxying |
+
+### D1 Database Studio
+
+A comprehensive database management interface inspired by Drizzle Studio and Supabase:
+
+**Data Browser**
+- Paginated table data with customizable page sizes (25, 50, 100, 250 rows)
+- Resizable columns with drag handles
+- Column visibility toggle - show/hide columns
+- Global search across all columns
+- Column-level filtering (equals, not equals, contains, starts with, is null, is not null)
+- Client-side and server-side sorting (ORDER BY toggle)
+- Inline cell editing with auto-save
+- Row actions: Edit dialog, Copy as JSON, Delete
+- Bulk row selection and bulk delete
+- Add new rows via form dialog
+- **Generate Dummy Data** - Insert 1-100 rows of fake data using Faker.js
+  - Supports all SQLite/D1 types: INTEGER, REAL, TEXT, DATE, DATETIME, TIMESTAMP, TIME, BOOLEAN, NUMERIC, DECIMAL, BLOB
+  - Auto-skips auto-increment primary keys
+
+**SQL Query Editor**
+- Syntax highlighting with CodeMirror
+- SQL autocomplete for tables, columns, and keywords
+- Execute with Cmd/Ctrl + Enter keyboard shortcut
+- Results displayed in table format
+- Query history with re-run capability (persisted in localStorage)
+
+**Schema Viewer**
+- View table structure with column definitions
+- Column types and primary key indicators
+- Row counts per table
 
 ## Sponsorship
 

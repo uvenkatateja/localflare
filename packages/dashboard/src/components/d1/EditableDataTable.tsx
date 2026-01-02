@@ -40,6 +40,7 @@ import {
   ViewIcon,
   Cancel01Icon,
   DatabaseIcon,
+  SparklesIcon,
 } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -93,6 +94,8 @@ interface EditableDataTableProps {
   serverSideSort?: boolean
   /** Called when server-side sort toggle changes */
   onServerSideSortChange?: (enabled: boolean) => void
+  /** Called when generate data button is clicked */
+  onGenerateData?: () => void
   /** Additional CSS classes */
   className?: string
 }
@@ -408,6 +411,7 @@ export function EditableDataTable({
   onSortingChange,
   serverSideSort = false,
   onServerSideSortChange,
+  onGenerateData,
   className,
 }: EditableDataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
@@ -715,6 +719,19 @@ export function EditableDataTable({
               ))}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Generate Data Button */}
+        {onGenerateData && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={onGenerateData}
+          >
+            <HugeiconsIcon icon={SparklesIcon} className="size-3.5" />
+            Generate Data
+          </Button>
+        )}
 
         {/* Filter count badge */}
         {hasFilters && (
