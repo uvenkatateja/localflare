@@ -14,8 +14,8 @@ import { bindingsApi } from "@/lib/api"
 import { PageHeader } from "@/components/ui/page-header"
 import { StatsCard, StatsCardGroup } from "@/components/ui/stats-card"
 import { DataTableLoading } from "@/components/ui/data-table"
-import { LandingPage } from "@/components/landing/LandingPage"
 import { cn } from "@/lib/utils"
+import { LandingPage } from "@/components/landing/LandingPage"
 
 const services = [
   {
@@ -80,7 +80,6 @@ export function Home() {
   const { data: bindings, isLoading, error } = useQuery({
     queryKey: ["bindings"],
     queryFn: bindingsApi.getAll,
-    retry: false,
   })
 
   const handleRetry = () => {
