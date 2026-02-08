@@ -3,14 +3,17 @@
 
 const CF_API_BASE = 'https://api.cloudflare.com/client/v4/accounts';
 
+interface Env {
+  ASSETS: { fetch: (request: Request) => Promise<Response> };
+}
+
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // Only handle /api/analytics/* routes
+    // Only handle /api/analytics/* routes — everything else goes to static assets
     if (!url.pathname.startsWith('/api/analytics')) {
-      // Fall through to static assets
-      return new Response(null, { status: 404 });
+      return env.ASSETS.fetch(request);
     }
 
     // Get credentials from request headers
